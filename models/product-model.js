@@ -9,6 +9,12 @@ const productSchema = new Schema({
     productName: {
         type: String,
     },
+    unitPrice: {
+        type: Number,
+    },
+    stock: {
+        type: Number,
+    }
 })
 
 const Product = mongoose.model('Product', productSchema);

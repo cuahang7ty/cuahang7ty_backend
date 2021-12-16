@@ -13,8 +13,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 //connect database
-console.log(process.env.DB_LOCAL)
-mongoose.connect(process.env.DB_LOCAL || process.env.DB_HOST,
+console.log(process.env.DB_LOCAL_URL)
+mongoose.connect(process.env.DB_HOST_URL || process.env.DB_LOCAL_URL,
     {
         useNewUrlParser: true,
         useUnifiedTopology: true
