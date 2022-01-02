@@ -1,20 +1,29 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+//MatHang
 const productSchema = new Schema({
-    barcode: {
-        type: String,
-        //required: true
-    },
-    productName: {
+    tenMatHang: {
         type: String,
     },
-    unitPrice: {
+    giaBanLe: {
         type: Number,
     },
-    stock: {
+    giaNhap: {
         type: Number,
-    }
+    },
+    soLuongTon: {
+        type: Number,
+    },
+    moTa: {
+        type: String,
+    },
+    ngayThem: {
+        type: Number,
+    },
+    isDeleted: {
+        type: Boolean,
+    },
 })
 
 const Product = mongoose.model('Product', productSchema);

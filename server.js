@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const mongoose = require('mongoose')
 
-const corsOptions ={ origin:'*', credentials:true} //access-control-allow-credentials:true optionSuccessStatus:200, }
+const corsOptions = { origin: '*', credentials: true } //access-control-allow-credentials:true optionSuccessStatus:200, }
 
 app.use(cors(corsOptions))
 
@@ -22,9 +22,20 @@ mongoose.connect(process.env.DB_HOST_URL || process.env.DB_LOCAL_URL,
     .then(() => console.log('Database connected!'))
     .catch(err => console.log('ERROR! : ', err));
 
-//router
+//routers ===============================================================
 const productRouter = require('./routers/product-router')
 app.use('/api/product', productRouter);
+
+const customerRouter = require('./routers/customer-router')
+app.use('/api/customer', customerRouter);
+
+const billReceiptRouter = require('./routers/billReceipt-router')
+app.use('/api/billReceipt', billReceiptRouter);
+
+const keywordRouter = require('./routers/keyword-router')
+app.use('/api/keyword', keywordRouter);
+
+//=======================================================================
 
 app.get('/', function (req, res) {
     res.json('welcome to backend cuahang7ty' + process.env.DB_LOCAL)
