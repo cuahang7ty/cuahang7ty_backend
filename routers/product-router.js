@@ -21,19 +21,47 @@ router.get("/get/:_id", (req, res) => {
     })
 })
 
-
 router.post('/add', async (req, res) => {
     const { body } = req
     try {
         var product = new ProductModel(body)
-        var result = await product.save()
-        console.log('add product success!', body)
-        res.send(result)
+        console.log('1', product)
+        product = await product.save()
+        await addNewKeywordForNewProduct(product.productName, product._id)
+        console.log('add product success!')
+        res.send(product)
     } catch (err) {
         console.log('add product failed', err)
         res.status(500).send(err)
     }
 })
+
+addNewKeywordForNewProduct = (productName, product_id) => {
+    const keywords = productName.toLowerCase().split(' ')
+    const promises = keywords.map(keyword => {
+        return new Promise(async resolve => {
+            const keywordFound = await KeywordModel.findOne({ primaryKey: keyword })
+            if (keywordFound !== null) {
+                keywordFound.product_ids.push(product_id)
+                keywordFound.save()
+                console.log('updated _id for keyword', keywordFound)
+            }
+            else {
+                newKeyword = new KeywordModel({
+                    primaryKey: keyword,
+                    secondKeys: [],
+                    product_ids: [product_id]
+                })
+                newKeyword.save()
+                console.log('added new keyword', newKeyword)
+            }
+            resolve(keyword)
+        })
+    })
+    Promise.all(promises).then(keywords => {
+        return keywords
+    })
+}
 
 router.put('/update/:_id', async (req, res) => {
     const { body } = req
@@ -49,23 +77,7 @@ router.put('/update/:_id', async (req, res) => {
     })
 })
 
-// router.put('/add/keyword/:_id', async (req, res) => {
-//     const { keyword } = req.body
-//     console.log('keyword ', keyword)
-//     ProductModel.findById(req.params._id, async (err, product) => {
-//         if (!err) {
-//             // product.keywords = [...product.keywords, keyword]
-//             product.keywords.push(keyword)
-//             var newProduct = await product.save()
-//             console.log('thêm khóa thành công! ', newProduct)
-//             res.status(200).json({ msg: 'Đã lưu khóa tìm kiếm!' })
-//         }
-//         else {
-//             console.log('err', err)
-//             res.status(400).json({ msg: 'Lưu khóa tìm kiếm thất bại!' })
-//         }
-//     })
-// })
+
 
 router.delete('/delete/:_id', async (req, res) => {
     ProductModel.findByIdAndDelete(req.params._id, err => {
@@ -93,15 +105,21 @@ thằng _id nào bị trùng nhiều nhất trong results sẽ là product có k
 
 router.put("/get/keywords", async (req, res) => {
     const { transcript } = req.body
-    const keywords = transcript.split(' ')
-    const promises = keywords.map(keyword => {
+    const keywordsToSearch = transcript.toLowerCase().split(' ')
+
+    const promises = keywordsToSearch.map(keyword => {
         return new Promise((resolve, reject) => {
-            KeywordModel.findOne({ "primaryKey": keyword }, (err, key) => {
+            KeywordModel.findOne({ "primaryKey": keyword }, async (err, key) => {
                 if (!err) {
-                    if (key !== null)
+                    if (key !== null){
                         resolve(key.product_ids)
-                    else
-                        resolve()
+                    }
+                    else {
+                        //tim theo secondKeys cua tat ca keyword, neu co bat ki secondKey nao phu hop, tra ve product_ids cua keyword do
+                        // searchBySecondKeys(keywordsToSearch)
+                        const resultsSearchingBySecondKeys = await searchBySecondKeys(keywordsToSearch)
+                        resolve(...resultsSearchingBySecondKeys)
+                    }
                 }
                 else
                     reject(err)
@@ -110,13 +128,42 @@ router.put("/get/keywords", async (req, res) => {
     })
     Promise.all(promises).then(async results => {
         let newArr = await getProduct_idFound(results)
-        // console.log('1', newArr)
         newArr = await findDuplicatedProduct_id(newArr)
-        // console.log('2', newArr)
         const finalResult = await replaceProduct_idByProduct(newArr)
         res.status(200).json(finalResult)
     })
 })
+
+const searchBySecondKeys = (keywordsToSearch) => {
+    return new Promise(resolve => {
+        KeywordModel.find({
+            $nor: [
+                { secondKeys: { $exists: false } },
+                { secondKeys: { $size: 0 } },
+            ]
+        }, (err, keywords) => {
+            const promises = keywords.map(keyword => {
+                return new Promise(resolve => {
+                    keywordsToSearch.map(keywordToSearch => {
+                        if(keyword !== undefined){
+                            const { secondKeys } = keyword
+                            const flag = secondKeys.find(secondKey => secondKey === keywordToSearch)
+                            console.log({ flag })
+                            resolve(keyword.product_ids)
+                        }
+                        else
+                            resolve()
+                    })
+                })
+            })
+            Promise.all(promises).then(results => {
+                // console.log(results)
+                // res.status(200).json(results)
+                resolve(results)
+            })
+        })
+    })
+}
 
 //coi chung ngay nao do bi bat dong bo
 const getProduct_idFound = (product_ids) => {
@@ -159,7 +206,7 @@ const arrangeTheCountOfProduct_id = (array) => {
 const replaceProduct_idByProduct = (arr) => {
     return new Promise(resolve => {
         const promises = arr.map(element => {
-            return new Promise((resolve, reject) => {
+            return new Promise(resolve => {
                 ProductModel.findById(element._id, (err, product) => {
                     resolve({
                         product: product,

@@ -16,7 +16,7 @@ router.post('/add', async (req, res) => {
     try {
         var keyword = new KeywordModel(body)
         var result = await keyword.save()
-        console.log('add keyword success!', body)
+        console.log('add keyword success!')
         res.send(result)
     } catch (err) {
         console.log('add keyword failed', err)
@@ -48,6 +48,16 @@ router.delete('/delete/:_id', async (req, res) => {
             console.log('delete keyword failed', err)
             res.status(400).json({ msg: 'Đối tượng không tồn tại!' })
         }
+    })
+})
+
+router.get("/get/:product_id", (req, res) => {
+    const {product_id} = req.params
+    KeywordModel.find({product_ids: product_id}, (err, keywords) => {
+        if (!err)
+            res.status(200).json(keywords)
+        else
+            res.status(400).json({ msg: 'Không tìm thấy dữ liệu' })
     })
 })
 

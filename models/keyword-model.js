@@ -9,7 +9,7 @@ const keywordSchema = new Schema({
     },
     secondKeys: [
         {
-            type: String,
+            type: String
         }
     ],
     product_ids: [

@@ -3,26 +3,31 @@ const Schema = mongoose.Schema;
 
 //MatHang
 const productSchema = new Schema({
-    tenMatHang: {
+    productName: {
         type: String,
     },
-    giaBanLe: {
+    retailPrice: {
         type: Number,
     },
-    giaNhap: {
+    costPrice: {
         type: Number,
     },
-    soLuongTon: {
+    stock: {
         type: Number,
     },
-    moTa: {
+    describe: {
         type: String,
     },
-    ngayThem: {
+    dateCreate: {
         type: Number,
+    },
+    searchedTime: {
+        type: Number,
+        default: 0
     },
     isDeleted: {
         type: Boolean,
+        default: false
     },
 })
 
