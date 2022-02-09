@@ -105,19 +105,19 @@ thằng _id nào bị trùng nhiều nhất trong results sẽ là product có k
 
 router.put("/get/keywords", async (req, res) => {
     const { transcript } = req.body
-    const keywordsToSearch = transcript.toLowerCase().split(' ')
+    const keywordsFromTranscript = transcript.toLowerCase().split(' ')
 
-    const promises = keywordsToSearch.map(keyword => {
+    const promises = keywordsFromTranscript.map(keyword => {
         return new Promise((resolve, reject) => {
             KeywordModel.findOne({ "primaryKey": keyword }, async (err, key) => {
                 if (!err) {
-                    if (key !== null){
+                    if (key !== null) {
                         resolve(key.product_ids)
                     }
                     else {
                         //tim theo secondKeys cua tat ca keyword, neu co bat ki secondKey nao phu hop, tra ve product_ids cua keyword do
-                        // searchBySecondKeys(keywordsToSearch)
-                        const resultsSearchingBySecondKeys = await searchBySecondKeys(keywordsToSearch)
+                        console.log({keyword})
+                        const resultsSearchingBySecondKeys = await searchBySecondKeys(keywordsFromTranscript)
                         resolve(...resultsSearchingBySecondKeys)
                     }
                 }
@@ -127,14 +127,16 @@ router.put("/get/keywords", async (req, res) => {
         })
     })
     Promise.all(promises).then(async results => {
+        console.log({results})
         let newArr = await getProduct_idFound(results)
+        console.log({newArr})
         newArr = await findDuplicatedProduct_id(newArr)
         const finalResult = await replaceProduct_idByProduct(newArr)
         res.status(200).json(finalResult)
     })
 })
 
-const searchBySecondKeys = (keywordsToSearch) => {
+const searchBySecondKeys = (keywordsFromTranscript) => {
     return new Promise(resolve => {
         KeywordModel.find({
             $nor: [
@@ -144,8 +146,8 @@ const searchBySecondKeys = (keywordsToSearch) => {
         }, (err, keywords) => {
             const promises = keywords.map(keyword => {
                 return new Promise(resolve => {
-                    keywordsToSearch.map(keywordToSearch => {
-                        if(keyword !== undefined){
+                    keywordsFromTranscript.map(keywordToSearch => {
+                        if (keyword !== undefined) {
                             const { secondKeys } = keyword
                             const flag = secondKeys.find(secondKey => secondKey === keywordToSearch)
                             console.log({ flag })
@@ -157,24 +159,25 @@ const searchBySecondKeys = (keywordsToSearch) => {
                 })
             })
             Promise.all(promises).then(results => {
-                // console.log(results)
-                // res.status(200).json(results)
                 resolve(results)
             })
         })
     })
 }
 
-//coi chung ngay nao do bi bat dong bo
 const getProduct_idFound = (product_ids) => {
     return new Promise(resolve => {
-        let productFounds = []
-        product_ids.map(_ids => {
-            if (_ids !== undefined && _ids !== null) {
-                productFounds = [...productFounds, ..._ids]
-            }
+        const promises = product_ids.map(_id => {
+            return new Promise(resolve => {
+                if (_id !== undefined && _id !== null) {
+                    // productFounds = [...productFounds, ..._ids]
+                    resolve(_id)
+                }
+            })
         })
-        resolve(productFounds)
+        Promise.all(promises).then(results => {
+            resolve(results)
+        })
     })
 }
 
