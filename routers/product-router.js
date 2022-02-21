@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const ProductModel = require('../models/product-model')
 const KeywordModel = require('../models/keyword-model')
+const { response } = require('express')
 
 router.get("/", (req, res) => {
     ProductModel.find({}, (err, products) => {
@@ -103,10 +104,100 @@ thằng _id nào bị trùng nhiều nhất trong results sẽ là product có k
 
 */
 
+router.put('/get/keywords', async (req, res) => {
+    const { transcript } = req.body
+    const keywordsFromTrans = transcript.toLowerCase().split(' ')
+
+    const product_idsFoundByPK = await findKeywordByPrimaryKey(keywordsFromTrans)
+
+    const product_idsFoundBySK = await findKeywordsBySecondKey(keywordsFromTrans)
+
+    const product_idsFound = [...product_idsFoundByPK, ...product_idsFoundBySK]
+
+    const results = await countResults(product_idsFound)
+    // getProductBy_Id(results)
+    // console.log(results)
+    res.status(200).json(results)
+    // res.status(200).json(results)
+})
+
+const findKeywordByPrimaryKey = (keywordsFromTrans) => {
+    return new Promise(resolve => {
+        const promises = keywordsFromTrans.map(keyword => {
+            return new Promise((resolve, reject) => {
+                KeywordModel.findOne({ "primaryKey": keyword }, async (err, keywordFound) => {
+                    if (!err) {
+                        resolve(keywordFound)
+                    }
+                    else
+                        reject(err)
+                })
+            })
+        })
+
+        Promise.all(promises)
+            .then(async keywordsFound => {
+                keywordsFound = keywordsFound.filter(keyword => keyword !== null)
+                const product_ids = await getProduct_idsFromKeywordArray(keywordsFound)
+                resolve(product_ids)
+            })
+    })
+}
+
+const findKeywordsBySecondKey = (keywordsFromTrans) => {
+    return new Promise((resolve, reject) => {
+        KeywordModel.find({ secondKeys: { $in: keywordsFromTrans } }, async (err, keywordsFound) => {
+            if (!err) {
+                const product_ids = await getProduct_idsFromKeywordArray(keywordsFound)
+                resolve(product_ids)
+            }
+            else
+                reject(err)
+        })
+    })
+}
+
+const getProduct_idsFromKeywordArray = (keywords) => {
+    return new Promise(resolve => {
+        let product_ids = []
+
+        const promises = keywords.map(keyword => {
+            return new Promise(resolve => {
+                product_ids.push(...keyword.product_ids)
+                resolve()
+            })
+        })
+        Promise.all(promises)
+            .then(temp => {
+                resolve(product_ids)
+            })
+    })
+}
+
+const countResults = (product_idsFound) => {
+    return new Promise(async resolve => {
+        let counts = {}
+        product_idsFound.forEach(function (_id) { counts[_id] = (counts[_id] || 0) + 1; });
+        
+        let list = []
+        for (let prop in counts) {
+            let productCount = {
+                product: await ProductModel.findById(prop),
+                count: counts[prop]
+            }
+            list.push(productCount)
+        }
+
+        list.sort((firstItem, secondItem) => secondItem.count - firstItem.count)
+        resolve(list)
+    })
+}
+
+/*
 router.put("/get/keywords", async (req, res) => {
     const { transcript } = req.body
     const keywordsFromTranscript = transcript.toLowerCase().split(' ')
-
+ 
     const promises = keywordsFromTranscript.map(keyword => {
         return new Promise((resolve, reject) => {
             KeywordModel.findOne({ "primaryKey": keyword }, async (err, key) => {
@@ -135,7 +226,7 @@ router.put("/get/keywords", async (req, res) => {
         res.status(200).json(finalResult)
     })
 })
-
+ 
 const searchBySecondKeys = (keywordsFromTranscript) => {
     return new Promise(resolve => {
         KeywordModel.find({
@@ -164,7 +255,7 @@ const searchBySecondKeys = (keywordsFromTranscript) => {
         })
     })
 }
-
+ 
 const getProduct_idFound = (product_ids) => {
     return new Promise(resolve => {
         const promises = product_ids.map(_id => {
@@ -180,46 +271,26 @@ const getProduct_idFound = (product_ids) => {
         })
     })
 }
+*/
 
-const findDuplicatedProduct_id = (array) => {
-    return new Promise(resolve => {
-        let newArr = []
-        for (var i = 0; i < array.length; i++) {
-            let count = 0
-            for (var j = i + 1; j < array.length; j++) {
-                if (array[i]._id.equals(array[j]._id)) {
-                    count++
-                    array.splice(j, 1)
-                }
-            }
-            newArr.push({
-                _id: array[i],
-                count: count
-            })
-        }
-        newArr = arrangeTheCountOfProduct_id(newArr)
-        resolve(newArr)
-    })
-}
 
-const arrangeTheCountOfProduct_id = (array) => {
-    return array.sort((firstItem, secondItem) => secondItem.count - firstItem.count)
-}
 
-const replaceProduct_idByProduct = (arr) => {
-    return new Promise(resolve => {
-        const promises = arr.map(element => {
-            return new Promise(resolve => {
-                ProductModel.findById(element._id, (err, product) => {
-                    resolve({
-                        product: product,
-                        count: element.count
-                    })
-                })
-            })
-        })
-        Promise.all(promises).then(products => resolve(products))
-    })
-}
+// const replaceProduct_idByProduct = (arr) => {
+//     return new Promise(resolve => {
+//         const promises = arr.map(element => {
+//             return new Promise(resolve => {
+//                 ProductModel.findById(element._id, (err, product) => {
+//                     resolve({
+//                         product: product,
+//                         count: element.count
+//                     })
+//                 })
+//             })
+//         })
+//         Promise.all(promises).then(products => resolve(products))
+//     })
+// }
+
+
 
 module.exports = router
