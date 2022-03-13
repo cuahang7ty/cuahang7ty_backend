@@ -29,7 +29,7 @@ app.use('/api/product', productRouter);
 const customerRouter = require('./routers/customer-router')
 app.use('/api/customer', customerRouter);
 
-const billReceiptRouter = require('./routers/billReceipt-router')
+const billReceiptRouter = require('./routers/bill-router')
 app.use('/api/billReceipt', billReceiptRouter);
 
 const keywordRouter = require('./routers/keyword-router')

@@ -193,6 +193,7 @@ const countResults = (product_idsFound) => {
     })
 }
 
+
 /*
 router.put("/get/keywords", async (req, res) => {
     const { transcript } = req.body

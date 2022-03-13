@@ -2,11 +2,11 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 //DonHang
-const billReceiptSchema = new Schema({
+const billSchema = new Schema({
     barcode: {
         type: String,
     },
-    ngayLap: {
+    dateTime: {
         type: Date,
     },
     khachHang_id:
@@ -14,17 +14,20 @@ const billReceiptSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Customer'
     },
-    chiTietDonHangs: [
+    billDetails: [
         {
-            matHang_id:
+            product_id:
             {
                 type: Schema.Types.ObjectId,
                 ref: 'Product'
             },
-            giaBan: {
+            retailPrice: {
                 type: Number,
             },
-            soLuong: {
+            costPrice: {
+                type: Number,
+            },
+            quantity: {
                 type: Number,
             },
             giamGia: {
@@ -34,5 +37,5 @@ const billReceiptSchema = new Schema({
     ],
 })
 
-const BillReceipt = mongoose.model('BillReceipt', billReceiptSchema);
-module.exports = BillReceipt;
+const Bill = mongoose.model('Bill', billSchema);
+module.exports = Bill;
